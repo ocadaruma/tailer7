@@ -1,0 +1,34 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+
+    dependencies {
+        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.19'
+    }
+}
+
+group 'com.mayreh'
+version '0.0.1'
+
+apply plugin: 'java'
+apply plugin: 'net.ltgt.apt'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'io.lettuce:lettuce-core:5.1.2.RELEASE'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    compileOnly 'org.projectlombok:lombok:1.18.4'
+    apt 'org.projectlombok:lombok:1.18.4'
+
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.assertj:assertj-core:3.11.1'
+}
