@@ -40,7 +40,7 @@ public class LogTailer {
     }
 
     /**
-     * Once subscription started, the thread blocks until closed
+     * Once subscription started, the thread blocks until stop
      * Hence subscription should be started in a separate thread
      */
     public void subscribe(String key) throws InterruptedException {
