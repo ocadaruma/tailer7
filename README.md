@@ -1,2 +1,2 @@
 # tailer7
-Scalable tailer
+A scalable tailer powered by Redis
