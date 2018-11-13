@@ -19,7 +19,6 @@ public class LogTailer {
     private final LogTailerListener listener;
 
     private final LinkedBlockingQueue<LogLine> queue = new LinkedBlockingQueue<>();
-    private int currentLineNum = -1;
     private volatile boolean subscribing = false;
 
     public LogTailer(
@@ -52,24 +51,16 @@ public class LogTailer {
             RedisCommands commands = connection.commands();
             RedisPubSubCommands pubSubCommands = connection.pubSubCommands();
 
+            final long[] currentTimestamp = {-1};
+
             connection.addListener(new RedisPubSubListener<String, LogLine>() {
                 @Override
                 public void message(String channel, LogLine message) {
                     log.debug("on message. channel: {}, message: {}", channel, message);
 
-                    if (channel.equals(key)) {
-                        // for the first time
-                        if (currentLineNum < 0 && message.getLineNum() > 0) {
-                            List<LogLine> previousLines =
-                                    commands.zrange(key, 0, message.getLineNum() - 1);
-
-                            for (LogLine line : previousLines) {
-                                queue.offer(line);
-                                currentLineNum++;
-                            }
-                        }
+                    if (channel.equals(key) && currentTimestamp[0] < message.getEpochMillis()) {
                         queue.offer(message);
-                        currentLineNum++;
+                        currentTimestamp[0] = message.getEpochMillis();
                     }
                 }
 
@@ -81,6 +72,17 @@ public class LogTailer {
                 @Override
                 public void subscribed(String channel, long count) {
                     log.debug("subscribed to channel: {}, count: {}", channel, count);
+
+                    if (channel.equals(key)) {
+                        // for the first time
+                        List<LogLine> previousLines =
+                                commands.zrange(key, 0, -1);
+
+                        for (LogLine line : previousLines) {
+                            queue.offer(line);
+                            currentTimestamp[0] = line.getEpochMillis();
+                        }
+                    }
                 }
 
                 @Override

@@ -25,8 +25,8 @@ class LogLineCodec implements RedisCodec<String, LogLine> {
     @Override
     public LogLine decodeValue(ByteBuffer bytes) {
         try {
-            return LogLine.fromMutable(objectMapper.readValue(
-                    stringCodec.decodeValue(bytes), LogLine.Mutable.class));
+            return LogLine.fromData(objectMapper.readValue(
+                    stringCodec.decodeValue(bytes), LogLine.LogLineData.class));
         } catch (IOException e) {
             log.error("failed to decode value", e);
             return null;
@@ -41,7 +41,7 @@ class LogLineCodec implements RedisCodec<String, LogLine> {
     @Override
     public ByteBuffer encodeValue(LogLine value) {
         try {
-            return ByteBuffer.wrap(objectMapper.writeValueAsBytes(value.toMutable()));
+            return ByteBuffer.wrap(objectMapper.writeValueAsBytes(value.toData()));
         } catch (JsonProcessingException e) {
             log.error("failed to encode value", e);
             return null;

@@ -8,24 +8,31 @@ import lombok.Value;
  */
 @Value
 public class LogLine {
-    int lineNum;
+    long epochMillis;
     String line;
 
-    static LogLine fromMutable(Mutable log) {
-        return new LogLine(log.lineNum, log.line);
+    static LogLine fromData(LogLineData log) {
+        return new LogLine(log.epochMillis, log.line);
     }
 
-    Mutable toMutable() {
-        Mutable log = new Mutable();
-        log.setLineNum(lineNum);
+    LogLineData toData() {
+        LogLineData log = new LogLineData();
+        log.setEpochMillis(epochMillis);
         log.setLine(line);
 
         return log;
     }
 
+    /**
+     * Used to sort log lines in Redis sorted set
+     */
+    double score() {
+        return (double)epochMillis / 1000.0;
+    }
+
     @Data
-    static class Mutable {
-        int lineNum;
+    static class LogLineData {
+        long epochMillis;
         String line;
     }
 }
