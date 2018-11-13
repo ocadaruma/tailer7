@@ -1,3 +1,5 @@
+import org.gradle.plugins.signing.Sign
+
 buildscript {
     repositories {
         maven {
@@ -34,9 +36,23 @@ subprojects {
     }
 }
 
+gradle.taskGraph.whenReady { taskGraph ->
+    if (taskGraph.allTasks.any { it instanceof Sign }) {
+        def password = System.console().readPassword("PGP Private Key Password: ")
+        project(':tailer7') { ext."signing.password" = new String(password) }
+    }
+}
+
 project(':tailer7') {
     apply plugin: 'maven'
     apply plugin: 'signing'
+
+    if (!project.hasProperty('sonatypeUsername')) {
+        ext.sonatypeUsername = ''
+    }
+    if (!project.hasProperty('sonatypePassword')) {
+        ext.sonatypePassword = ''
+    }
 
     task javadocJar(type: Jar) {
         classifier = 'javadoc'
