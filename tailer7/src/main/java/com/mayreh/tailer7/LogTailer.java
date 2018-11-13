@@ -51,16 +51,16 @@ public class LogTailer {
             RedisCommands commands = connection.commands();
             RedisPubSubCommands pubSubCommands = connection.pubSubCommands();
 
-            final long[] currentTimestamp = {-1};
+            final int[] currentSequence = {-1};
 
             connection.addListener(new RedisPubSubListener<String, LogLine>() {
                 @Override
                 public void message(String channel, LogLine message) {
                     log.debug("on message. channel: {}, message: {}", channel, message);
 
-                    if (channel.equals(key) && currentTimestamp[0] < message.getEpochMillis()) {
+                    if (channel.equals(key) && currentSequence[0] < message.getSequence()) {
                         queue.offer(message);
-                        currentTimestamp[0] = message.getEpochMillis();
+                        currentSequence[0] = message.getSequence();
                     }
                 }
 
@@ -80,7 +80,7 @@ public class LogTailer {
 
                         for (LogLine line : previousLines) {
                             queue.offer(line);
-                            currentTimestamp[0] = line.getEpochMillis();
+                            currentSequence[0] = line.getSequence();
                         }
                     }
                 }

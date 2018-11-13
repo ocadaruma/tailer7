@@ -6,9 +6,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,35 +33,10 @@ public class LogTailerTest {
         subscriptionExecutor.shutdown();
     }
 
-    private Clock mockClock() {
-        return new Clock() {
-            private long millis = 0;
-
-            @Override
-            public ZoneId getZone() {
-                return null;
-            }
-
-            @Override
-            public Clock withZone(ZoneId zone) {
-                return null;
-            }
-
-            @Override
-            public Instant instant() {
-                return null;
-            }
-            @Override
-            public long millis() {
-                return millis++;
-            }
-        };
-    }
-
     @Test
     public void testSendAndTail() throws Exception {
 
-        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build(), mockClock())) {
+        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build())) {
 
             List<LogLine> received = new ArrayList<>();
             LogTailer tailer = new LogTailer(client, LogTailerConfig.builder().build(), received::add);
@@ -105,7 +77,7 @@ public class LogTailerTest {
     @Test
     public void testSendAndTailWhenNoNewMessage() throws Exception {
 
-        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build(), mockClock())) {
+        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build())) {
 
             List<LogLine> received = new ArrayList<>();
             LogTailer tailer = new LogTailer(client, LogTailerConfig.builder().build(), received::add);
@@ -141,7 +113,7 @@ public class LogTailerTest {
     @Test
     public void testTailFromLast() throws Exception {
 
-        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build(), mockClock())) {
+        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build())) {
 
             List<LogLine> received = new ArrayList<>();
             LogTailer tailer = new LogTailer(client, LogTailerConfig.builder().readFromStart(false).build(), received::add);

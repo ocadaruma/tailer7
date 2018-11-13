@@ -8,16 +8,16 @@ import lombok.Value;
  */
 @Value
 public class LogLine {
-    long epochMillis;
+    int sequence;
     String line;
 
     static LogLine fromData(LogLineData log) {
-        return new LogLine(log.epochMillis, log.line);
+        return new LogLine(log.sequence, log.line);
     }
 
     LogLineData toData() {
         LogLineData log = new LogLineData();
-        log.setEpochMillis(epochMillis);
+        log.setSequence(sequence);
         log.setLine(line);
 
         return log;
@@ -27,12 +27,12 @@ public class LogLine {
      * Used to sort log lines in Redis sorted set
      */
     double score() {
-        return (double)epochMillis / 1000.0;
+        return sequence;
     }
 
     @Data
     static class LogLineData {
-        long epochMillis;
+        int sequence;
         String line;
     }
 }

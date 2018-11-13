@@ -10,13 +10,13 @@ public class LogLineCodecTest {
     @Test
     public void serde() {
         LogLineCodec codec = new LogLineCodec();
-        LogLine log = new LogLine(1542118644469L, "abcde");
+        LogLine log = new LogLine(55301, "abcde");
 
         assertThat(new String(codec.encodeValue(log).array()))
-                .isEqualTo("{\"epochMillis\":1542118644469,\"line\":\"abcde\"}");
+                .isEqualTo("{\"sequence\":55301,\"line\":\"abcde\"}");
 
         assertThat(
-                codec.decodeValue(ByteBuffer.wrap("{\"epochMillis\":1542118644469,\"line\":\"abcde\"}".getBytes())))
+                codec.decodeValue(ByteBuffer.wrap("{\"sequence\":55301,\"line\":\"abcde\"}".getBytes())))
                 .isEqualTo(log);
     }
 }
