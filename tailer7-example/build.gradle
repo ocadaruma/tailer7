@@ -1,0 +1,9 @@
+apply plugin: 'application'
+
+mainClassName = 'com.example.Main'
+
+dependencies {
+    compile project(':tailer7')
+
+    compile 'commons-io:commons-io:2.6'
+}

@@ -1,0 +1,7 @@
+archivesBaseName = 'tailer7'
+
+dependencies {
+    compile 'io.lettuce:lettuce-core:5.1.2.RELEASE'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
+    compile 'org.slf4j:slf4j-api:1.7.25'
+}

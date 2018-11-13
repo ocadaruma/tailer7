@@ -10,25 +10,92 @@ buildscript {
     }
 }
 
-group 'com.mayreh'
-version '0.0.1'
-
-apply plugin: 'java'
-apply plugin: 'net.ltgt.apt'
-
-sourceCompatibility = 1.8
-
-repositories {
-    mavenCentral()
+allprojects {
+    group = 'com.mayreh'
+    version = '0.0.1'
 }
 
-dependencies {
-    compile 'io.lettuce:lettuce-core:5.1.2.RELEASE'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
-    compile 'org.slf4j:slf4j-api:1.7.25'
-    compileOnly 'org.projectlombok:lombok:1.18.4'
-    apt 'org.projectlombok:lombok:1.18.4'
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'net.ltgt.apt'
 
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.assertj:assertj-core:3.11.1'
+    sourceCompatibility = 1.8
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        compileOnly 'org.projectlombok:lombok:1.18.4'
+        apt 'org.projectlombok:lombok:1.18.4'
+
+        testCompile 'junit:junit:4.12'
+        testCompile 'org.assertj:assertj-core:3.11.1'
+    }
+}
+
+project(':tailer7') {
+    apply plugin: 'maven'
+    apply plugin: 'signing'
+
+    task javadocJar(type: Jar) {
+        classifier = 'javadoc'
+        from javadoc
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    artifacts {
+        archives javadocJar, sourcesJar
+    }
+
+    signing {
+        sign configurations.archives
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: sonatypeUsername, password: sonatypePassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: sonatypeUsername, password: sonatypePassword)
+                }
+
+                pom.project {
+                    name 'tailer7'
+                    packaging 'jar'
+                    // optionally artifactId can be defined here
+                    description 'A scalable tailer powered by Redis'
+                    url 'https://github.com/ocadaruma/tailer7'
+
+                    scm {
+                        connection 'scm:git:git@github.com:ocadaruma/tailer7.git'
+                        url 'git@github.com:ocadaruma/tailer7.git'
+                    }
+
+                    licenses {
+                        license {
+                            name 'The Apache License, Version 2.0'
+                            url 'https://raw.githubusercontent.com/ocadaruma/tailer7/master/LICENSE'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id 'ocadaruma'
+                            name 'Haruki Okada'
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
