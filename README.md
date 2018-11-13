@@ -1,5 +1,7 @@
 # tailer7
 
+[![Build Status](https://travis-ci.org/ocadaruma/tailer7.svg?branch=master)](https://travis-ci.org/ocadaruma/tailer7)
+
 A scalable tailer powered by Redis.
 
 ## Installation
