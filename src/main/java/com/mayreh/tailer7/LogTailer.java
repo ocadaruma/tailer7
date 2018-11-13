@@ -1,8 +1,7 @@
 package com.mayreh.tailer7;
 
+import io.lettuce.core.RedisClient;
 import io.lettuce.core.cluster.RedisClusterClient;
-import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
-import io.lettuce.core.cluster.pubsub.api.sync.RedisClusterPubSubCommands;
 import io.lettuce.core.pubsub.RedisPubSubListener;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,21 +15,25 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class LogTailer implements AutoCloseable {
     private final CombinedConnection connection;
 
-    private RedisAdvancedClusterCommands<String, LogLine> clusterCommands;
-    private RedisClusterPubSubCommands<String, LogLine> pubSubCommands;
+    private RedisCommands commands;
+    private RedisPubSubCommands pubSubCommands;
 
     private final LinkedBlockingQueue<LogLine> queue = new LinkedBlockingQueue<>();
     private int currentLineNum = -1;
     private boolean subscribing = false;
 
     public LogTailer(RedisClusterClient client) {
-        this.connection = new CombinedConnection(client);
+        this.connection = new CombinedConnection(new RedisClients.Cluster(client));
+    }
+
+    public LogTailer(RedisClient client) {
+        this.connection = new CombinedConnection(new RedisClients.Standalone(client));
     }
 
     public void open() {
         connection.open();
 
-        clusterCommands = connection.clusterCommands();
+        commands = connection.commands();
         pubSubCommands = connection.pubSubCommands();
     }
 
@@ -44,7 +47,7 @@ public class LogTailer implements AutoCloseable {
                     // for the first time
                     if (currentLineNum < 0 && message.getLineNum() > 0) {
                         List<LogLine> previousLines =
-                                clusterCommands.zrange(key, 0, message.getLineNum() - 1);
+                                commands.zrange(key, 0, message.getLineNum() - 1);
 
                         for (LogLine line : previousLines) {
                             queue.offer(line);

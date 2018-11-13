@@ -1,5 +1,5 @@
 package com.mayreh.tailer7;
 
-interface RedisConnection extends AutoCloseable {
+interface RedisConnection extends Closeable {
     RedisCommands sync();
 }

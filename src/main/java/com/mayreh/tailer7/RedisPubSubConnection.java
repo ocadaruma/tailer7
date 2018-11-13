@@ -1,6 +1,8 @@
 package com.mayreh.tailer7;
 
-interface RedisPubSubConnection extends AutoCloseable {
+import io.lettuce.core.pubsub.RedisPubSubListener;
+
+interface RedisPubSubConnection extends Closeable {
     RedisPubSubCommands sync();
-    void addListener()
+    void addListener(RedisPubSubListener<String, LogLine> listener);
 }

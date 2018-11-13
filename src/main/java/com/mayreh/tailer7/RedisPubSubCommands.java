@@ -1,5 +1,6 @@
 package com.mayreh.tailer7;
 
 interface RedisPubSubCommands {
-    void publish(String key, LogLine logLine);
+    void subscribe(String ...channels);
+    Long publish(String key, LogLine logLine);
 }

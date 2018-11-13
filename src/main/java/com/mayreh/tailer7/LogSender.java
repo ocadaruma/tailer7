@@ -1,35 +1,39 @@
 package com.mayreh.tailer7;
 
+import io.lettuce.core.RedisClient;
 import io.lettuce.core.cluster.RedisClusterClient;
-import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
-import io.lettuce.core.cluster.pubsub.api.sync.RedisClusterPubSubCommands;
 
 /**
  * Provides feature to publish log
  * This class is intended to use with local file tailer such as Apache Commons IO Tailer
  */
-public class LogSender implements AutoCloseable {
+public class LogSender implements Closeable {
     private final CombinedConnection connection;
     private final LogSenderConfig config;
 
-    private RedisAdvancedClusterCommands<String, LogLine> clusterCommands;
-    private RedisClusterPubSubCommands<String, LogLine> pubSubCommands;
+    private RedisCommands commands;
+    private RedisPubSubCommands pubSubCommands;
 
     public LogSender(RedisClusterClient client, LogSenderConfig config) {
-        this.connection = new CombinedConnection(client);
+        this.connection = new CombinedConnection(new RedisClients.Cluster(client));
+        this.config = config;
+    }
+
+    public LogSender(RedisClient client, LogSenderConfig config) {
+        this.connection = new CombinedConnection(new RedisClients.Standalone(client));
         this.config = config;
     }
 
     public void open() {
         connection.open();
 
-        clusterCommands = connection.clusterCommands();
+        commands = connection.commands();
         pubSubCommands = connection.pubSubCommands();
     }
 
     public void send(String key, LogLine logLine) {
-        clusterCommands.zadd(key, (double)logLine.getLineNum(), logLine);
-        clusterCommands.expire(key, config.getExpireSeconds());
+        commands.zadd(key, (double)logLine.getLineNum(), logLine);
+        commands.expire(key, config.getExpireSeconds());
 
         pubSubCommands.publish(key, logLine);
     }

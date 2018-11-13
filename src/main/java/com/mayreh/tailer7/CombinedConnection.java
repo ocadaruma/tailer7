@@ -1,26 +1,20 @@
 package com.mayreh.tailer7;
 
-import io.lettuce.core.cluster.RedisClusterClient;
-import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
-import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
-import io.lettuce.core.cluster.pubsub.StatefulRedisClusterPubSubConnection;
-import io.lettuce.core.cluster.pubsub.api.sync.RedisClusterPubSubCommands;
 import io.lettuce.core.pubsub.RedisPubSubListener;
 
 /**
  * Combines two types of connections for convenience
  */
 class CombinedConnection implements AutoCloseable {
-    private final RedisClusterClient clusterClient;
-    private final LogLineCodec codec = new LogLineCodec();
+    private final RedisClient client;
 
-    private StatefulRedisClusterConnection<String, LogLine> clusterConnection;
-    private StatefulRedisClusterPubSubConnection<String, LogLine> pubSubConnection;
+    private RedisConnection connection;
+    private RedisPubSubConnection pubSubConnection;
 
     private boolean isOpen = false;
 
-    CombinedConnection(RedisClusterClient clusterClient) {
-        this.clusterClient = clusterClient;
+    CombinedConnection(RedisClient client) {
+        this.client = client;
     }
 
     public void open() {
@@ -29,14 +23,14 @@ class CombinedConnection implements AutoCloseable {
         }
 
         try {
-            clusterConnection = clusterClient.connect(codec);
-            pubSubConnection = clusterClient.connectPubSub(codec);
+            connection = client.connect();
+            pubSubConnection = client.connectPubSub();
             isOpen = true;
         } catch (RuntimeException e) {
-            // We have to release only clusterConnection
+            // We do not have to release pubSubConnection
             // because pubSubConnection will be null if connectPubSub() fails
-            if (clusterConnection != null) {
-                clusterConnection.close();
+            if (connection != null) {
+                connection.close();
             }
             throw e;
         }
@@ -50,15 +44,15 @@ class CombinedConnection implements AutoCloseable {
         pubSubConnection.addListener(listener);
     }
 
-    public RedisAdvancedClusterCommands<String, LogLine> clusterCommands() {
+    public RedisCommands commands() {
         if (!isOpen) {
             throw new IllegalStateException("connection is not open");
         }
 
-        return clusterConnection.sync();
+        return connection.sync();
     }
 
-    public RedisClusterPubSubCommands<String, LogLine> pubSubCommands() {
+    public RedisPubSubCommands pubSubCommands() {
         if (!isOpen) {
             throw new IllegalStateException("connection is not open");
         }
@@ -73,8 +67,8 @@ class CombinedConnection implements AutoCloseable {
         }
 
         try {
-            if (clusterConnection != null) {
-                clusterConnection.close();
+            if (connection != null) {
+                connection.close();
             }
             if (pubSubConnection != null) {
                 pubSubConnection.close();
