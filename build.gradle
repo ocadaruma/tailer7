@@ -1,14 +1,6 @@
-import org.gradle.plugins.signing.Sign
-
 buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-
-    dependencies {
-        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.19'
+    ext {
+        lombokVersion = '1.18.4'
     }
 }
 
@@ -19,7 +11,6 @@ allprojects {
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'net.ltgt.apt'
 
     sourceCompatibility = 1.8
 
@@ -28,8 +19,10 @@ subprojects {
     }
 
     dependencies {
-        compileOnly 'org.projectlombok:lombok:1.18.4'
-        apt 'org.projectlombok:lombok:1.18.4'
+        annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+        compileOnly "org.projectlombok:lombok:$lombokVersion"
+        testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+        testCompileOnly "org.projectlombok:lombok:$lombokVersion"
 
         testCompile 'junit:junit:4.12'
         testCompile 'org.assertj:assertj-core:3.11.1'
@@ -88,7 +81,6 @@ project(':tailer7') {
                 pom.project {
                     name 'tailer7'
                     packaging 'jar'
-                    // optionally artifactId can be defined here
                     description 'A scalable tailer powered by Redis'
                     url 'https://github.com/ocadaruma/tailer7'
 
