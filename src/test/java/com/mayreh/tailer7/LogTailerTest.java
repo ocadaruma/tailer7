@@ -24,6 +24,7 @@ public class LogTailerTest {
         subscriptionExecutor = Executors.newSingleThreadExecutor();
 
         client = RedisClient.create(RedisURI.create("127.0.0.1", 6379));
+        client.connect().sync().del("key");
     }
 
     @After
@@ -34,23 +35,20 @@ public class LogTailerTest {
     @Test
     public void testSendAndTail() throws Exception {
 
-        try (
-                LogSender sender = new LogSender(client, LogSenderConfig.builder().build());
-                LogTailer tailer = new LogTailer(client)
-        ) {
+        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build())) {
+
+            List<LogLine> received = new ArrayList<>();
+            LogTailer tailer = new LogTailer(client, LogTailerConfig.builder().build(), received::add);
 
             sender.open();
-            tailer.open();
 
             // send log in advance
             sender.send("key", new LogLine(0, "first line"));
             sender.send("key", new LogLine(1, "second line"));
 
-            List<LogLine> received = new ArrayList<>();
-
             subscriptionExecutor.execute(() -> {
                 try {
-                    tailer.subscribe("key", received::add);
+                    tailer.subscribe("key");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -64,6 +62,8 @@ public class LogTailerTest {
 
             // wait consumption
             Thread.sleep(500L);
+
+            tailer.stop();
 
             assertThat(received).isEqualTo(Arrays.asList(
                     new LogLine(0, "first line"),

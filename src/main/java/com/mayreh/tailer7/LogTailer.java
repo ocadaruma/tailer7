@@ -7,96 +7,111 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Provides feature to tail log from Redis
  */
 @Slf4j
-public class LogTailer implements AutoCloseable {
-    private final CombinedConnection connection;
-
-    private RedisCommands commands;
-    private RedisPubSubCommands pubSubCommands;
+public class LogTailer {
+    private final com.mayreh.tailer7.RedisClient client;
+    private final LogTailerConfig config;
+    private final LogTailerListener listener;
 
     private final LinkedBlockingQueue<LogLine> queue = new LinkedBlockingQueue<>();
     private int currentLineNum = -1;
-    private boolean subscribing = false;
+    private volatile boolean subscribing = false;
 
-    public LogTailer(RedisClusterClient client) {
-        this.connection = new CombinedConnection(new RedisClients.Cluster(client));
+    public LogTailer(
+            RedisClusterClient client,
+            LogTailerConfig config,
+            LogTailerListener listener) {
+        this.client = new RedisClients.Cluster(client);
+        this.config = config;
+        this.listener = listener;
     }
 
-    public LogTailer(RedisClient client) {
-        this.connection = new CombinedConnection(new RedisClients.Standalone(client));
+    public LogTailer(
+            RedisClient client,
+            LogTailerConfig config,
+            LogTailerListener listener) {
+        this.client = new RedisClients.Standalone(client);
+        this.config = config;
+        this.listener = listener;
     }
 
-    public void open() {
-        connection.open();
+    /**
+     * Once subscription started, the thread blocks until closed
+     * Hence subscription should be started in a separate thread
+     */
+    public void subscribe(String key) throws InterruptedException {
+        try (CombinedConnection connection = new CombinedConnection(client)) {
 
-        commands = connection.commands();
-        pubSubCommands = connection.pubSubCommands();
-    }
+            connection.open();
 
-    public void subscribe(String key, LogTailerListener listener) throws InterruptedException {
-        connection.addListener(new RedisPubSubListener<String, LogLine>() {
-            @Override
-            public void message(String channel, LogLine message) {
-                log.debug("on message. channel: {}, message: {}", channel, message);
+            RedisCommands commands = connection.commands();
+            RedisPubSubCommands pubSubCommands = connection.pubSubCommands();
 
-                if (channel.equals(key)) {
-                    // for the first time
-                    if (currentLineNum < 0 && message.getLineNum() > 0) {
-                        List<LogLine> previousLines =
-                                commands.zrange(key, 0, message.getLineNum() - 1);
+            connection.addListener(new RedisPubSubListener<String, LogLine>() {
+                @Override
+                public void message(String channel, LogLine message) {
+                    log.debug("on message. channel: {}, message: {}", channel, message);
 
-                        for (LogLine line : previousLines) {
-                            queue.offer(line);
-                            currentLineNum++;
+                    if (channel.equals(key)) {
+                        // for the first time
+                        if (currentLineNum < 0 && message.getLineNum() > 0) {
+                            List<LogLine> previousLines =
+                                    commands.zrange(key, 0, message.getLineNum() - 1);
+
+                            for (LogLine line : previousLines) {
+                                queue.offer(line);
+                                currentLineNum++;
+                            }
                         }
+                        queue.offer(message);
+                        currentLineNum++;
                     }
-                    queue.offer(message);
-                    currentLineNum++;
+                }
+
+                @Override
+                public void message(String pattern, String channel, LogLine message) {
+                    log.debug("on message. pattern: {}, channel: {}, message: {}", pattern, channel, message);
+                }
+
+                @Override
+                public void subscribed(String channel, long count) {
+                    log.debug("subscribed to channel: {}, count: {}", channel, count);
+                }
+
+                @Override
+                public void psubscribed(String pattern, long count) {
+                    log.debug("psubscribed to pattern: {}, count: {}", pattern, count);
+                }
+
+                @Override
+                public void unsubscribed(String channel, long count) {
+                    log.debug("unsubscribed from channel: {}, count: {}", channel, count);
+                }
+
+                @Override
+                public void punsubscribed(String pattern, long count) {
+                    log.debug("punsubscribed from pattern: {}, count: {}", pattern, count);
+                }
+            });
+
+            pubSubCommands.subscribe(key);
+            subscribing = true;
+
+            while (subscribing) {
+                LogLine line = queue.poll(config.getDelayMillis(), TimeUnit.MILLISECONDS);
+                if (line != null) {
+                    listener.onSent(line);
                 }
             }
-
-            @Override
-            public void message(String pattern, String channel, LogLine message) {
-                log.debug("on message. pattern: {}, channel: {}, message: {}", pattern, channel, message);
-            }
-
-            @Override
-            public void subscribed(String channel, long count) {
-                log.debug("subscribed to channel: {}, count: {}", channel, count);
-            }
-
-            @Override
-            public void psubscribed(String pattern, long count) {
-                log.debug("psubscribed to pattern: {}, count: {}", pattern, count);
-            }
-
-            @Override
-            public void unsubscribed(String channel, long count) {
-                log.debug("unsubscribed from channel: {}, count: {}", channel, count);
-            }
-
-            @Override
-            public void punsubscribed(String pattern, long count) {
-                log.debug("punsubscribed from pattern: {}, count: {}", pattern, count);
-            }
-        });
-
-        pubSubCommands.subscribe(key);
-        subscribing = true;
-
-        while(subscribing) {
-            LogLine line = queue.take();
-            listener.onSent(line);
         }
     }
 
-    @Override
-    public void close() {
+    public void stop() {
         subscribing = false;
-        connection.close();
     }
 }

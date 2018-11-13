@@ -5,7 +5,7 @@ import io.lettuce.core.pubsub.RedisPubSubListener;
 /**
  * Combines two types of connections for convenience
  */
-class CombinedConnection implements AutoCloseable {
+class CombinedConnection implements Closeable {
     private final RedisClient client;
 
     private RedisConnection connection;
