@@ -30,15 +30,11 @@ public class LogSender implements Closeable {
     }
 
     public LogSender(RedisClusterClient client, LogSenderConfig config) {
-        this.connection = new CombinedConnection(new RedisClients.Cluster(client));
-        this.config = config;
-        this.clock = Clock.systemDefaultZone();
+        this(client, config, Clock.systemDefaultZone());
     }
 
     public LogSender(RedisClient client, LogSenderConfig config) {
-        this.connection = new CombinedConnection(new RedisClients.Standalone(client));
-        this.config = config;
-        this.clock = Clock.systemDefaultZone();
+        this(client, config, Clock.systemDefaultZone());
     }
 
     public void open() {

@@ -13,4 +13,10 @@ public class LogTailerConfig {
      */
     @Builder.Default
     long delayMillis = DELAY_MILLIS_DEFAULT;
+
+    /**
+     * If true, tail log from first
+     */
+    @Builder.Default
+    boolean readFromStart = true;
 }

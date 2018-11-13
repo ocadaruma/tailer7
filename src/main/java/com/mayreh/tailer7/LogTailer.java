@@ -19,7 +19,7 @@ public class LogTailer {
     private final LogTailerListener listener;
 
     private final LinkedBlockingQueue<LogLine> queue = new LinkedBlockingQueue<>();
-    private volatile boolean subscribing = false;
+    private volatile boolean running = false;
 
     public LogTailer(
             RedisClusterClient client,
@@ -73,7 +73,7 @@ public class LogTailer {
                 public void subscribed(String channel, long count) {
                     log.debug("subscribed to channel: {}, count: {}", channel, count);
 
-                    if (channel.equals(key)) {
+                    if (channel.equals(key) && config.isReadFromStart()) {
                         // for the first time
                         List<LogLine> previousLines =
                                 commands.zrange(key, 0, -1);
@@ -102,9 +102,9 @@ public class LogTailer {
             });
 
             pubSubCommands.subscribe(key);
-            subscribing = true;
+            running = true;
 
-            while (subscribing) {
+            while (running) {
                 LogLine line = queue.poll(config.getDelayMillis(), TimeUnit.MILLISECONDS);
                 if (line != null) {
                     listener.onSent(line);
@@ -114,6 +114,6 @@ public class LogTailer {
     }
 
     public void stop() {
-        subscribing = false;
+        running = false;
     }
 }
