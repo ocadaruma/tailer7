@@ -147,4 +147,36 @@ public class LogTailerTest {
             ));
         }
     }
+
+    @Test
+    public void testTailAfterStopped() throws Exception {
+
+        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build())) {
+
+            List<LogLine> received = new ArrayList<>();
+            LogTailer tailer = new LogTailer(client, LogTailerConfig.builder().build(), received::add);
+
+            sender.open();
+
+            // send log in advance
+            sender.send("key", "first line");
+            sender.send("key", "second line");
+
+            tailer.stop();
+
+            subscriptionExecutor.execute(() -> {
+                try {
+                    tailer.subscribe("key");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            // wait
+            Thread.sleep(100L);
+
+            // subscription should not started
+            assertThat(received).isEmpty();
+        }
+    }
 }

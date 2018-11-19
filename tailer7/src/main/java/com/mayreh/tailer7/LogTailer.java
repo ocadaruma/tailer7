@@ -19,7 +19,7 @@ public class LogTailer {
     private final LogTailerListener listener;
 
     private final LinkedBlockingQueue<LogLine> queue = new LinkedBlockingQueue<>();
-    private volatile boolean running = false;
+    private volatile boolean run = true;
 
     public LogTailer(
             RedisClusterClient client,
@@ -45,6 +45,10 @@ public class LogTailer {
      */
     public void subscribe(String key) throws InterruptedException {
         try (CombinedConnection connection = new CombinedConnection(client)) {
+
+            if (!run) {
+                return;
+            }
 
             connection.open();
 
@@ -102,9 +106,8 @@ public class LogTailer {
             });
 
             pubSubCommands.subscribe(key);
-            running = true;
 
-            while (running) {
+            while (run) {
                 LogLine line = queue.poll(config.getDelayMillis(), TimeUnit.MILLISECONDS);
                 if (line != null) {
                     listener.onSent(line);
@@ -114,6 +117,6 @@ public class LogTailer {
     }
 
     public void stop() {
-        running = false;
+        run = false;
     }
 }
