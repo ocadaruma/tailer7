@@ -12,14 +12,14 @@ A scalable tailer powered by Redis.
 <dependency>
   <groupId>com.mayreh</groupId>
   <artifactId>tailer7</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```
-compile 'com.mayreh:tailer7:0.0.1'
+compile 'com.mayreh:tailer7:0.0.2'
 ```
 
 ## Usage
