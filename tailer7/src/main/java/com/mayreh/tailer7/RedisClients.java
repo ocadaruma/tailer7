@@ -1,5 +1,6 @@
 package com.mayreh.tailer7;
 
+import io.lettuce.core.Range;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
@@ -41,6 +42,11 @@ class RedisClients {
             @Override
             public List<LogLine> zrange(String key, long start, long stop) {
                 return delegate.zrange(key, start, stop);
+            }
+
+            @Override
+            public Long zcount(String key, Range<? extends Number> range) {
+                return delegate.zcount(key, range);
             }
 
             @Override
@@ -127,6 +133,11 @@ class RedisClients {
             @Override
             public List<LogLine> zrange(String key, long start, long stop) {
                 return delegate.zrange(key, start, stop);
+            }
+
+            @Override
+            public Long zcount(String key, Range<? extends Number> range) {
+                return delegate.zcount(key, range);
             }
 
             @Override

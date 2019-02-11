@@ -182,4 +182,30 @@ public class LogTailerTest {
             assertThat(received).isEmpty();
         }
     }
+
+    @Test
+    public void testCountAndGetLogs() {
+
+        try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build())) {
+
+            LogTailer tailer = new LogTailer(client, LogTailerConfig.builder().build(), ignored -> {});
+
+            sender.open();
+
+            // send log in advance
+            sender.send("key", "first line");
+            sender.send("key", "second line");
+            sender.send("key", "third line");
+
+            assertThat(tailer.count("key")).isEqualTo(3);
+
+            // first 2 lines
+            assertThat(tailer.getLogs("key", 0, 1)).isEqualTo(
+                    Arrays.asList(
+                            new LogLine(0, "first line"),
+                            new LogLine(1, "second line")
+                    )
+            );
+        }
+    }
 }

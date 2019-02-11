@@ -1,5 +1,6 @@
 package com.mayreh.tailer7;
 
+import io.lettuce.core.Range;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.pubsub.RedisPubSubListener;
@@ -113,6 +114,18 @@ public class LogTailer {
                     listener.onSent(line);
                 }
             }
+        }
+    }
+
+    public long count(String key) {
+        try (RedisConnection connection = this.client.connect()) {
+            return connection.sync().zcount(key, Range.unbounded());
+        }
+    }
+
+    public List<LogLine> getLogs(String key, int start, int end) {
+        try (RedisConnection connection = this.client.connect()) {
+            return connection.sync().zrange(key, start, end);
         }
     }
 
