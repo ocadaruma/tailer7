@@ -8,6 +8,18 @@ import lombok.Value;
 public class LogTailerConfig {
     public static final long DELAY_MILLIS_DEFAULT = 500L;
 
+    public enum StartMode {
+        /**
+         * Read previous lines when subscription starts
+         */
+        GO_BACK,
+
+        /**
+         * Only reads newly arrived lines
+         */
+        LATEST,
+    }
+
     /**
      * Specify polling delay
      */
@@ -15,8 +27,16 @@ public class LogTailerConfig {
     long delayMillis = DELAY_MILLIS_DEFAULT;
 
     /**
-     * If true, tail log from first
+     * Specify the line offset the tailer read from
+     * Negative number (- n) means read from last n lines
+     * Available only startMode is GO_BACK
      */
     @Builder.Default
-    boolean readFromStart = true;
+    int startOffset = 0;
+
+    /**
+     * Specify the behavior when subscription starts
+     */
+    @Builder.Default
+    StartMode startMode = StartMode.GO_BACK;
 }

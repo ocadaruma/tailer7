@@ -116,7 +116,10 @@ public class LogTailerTest {
         try (LogSender sender = new LogSender(client, LogSenderConfig.builder().build())) {
 
             List<LogLine> received = new ArrayList<>();
-            LogTailer tailer = new LogTailer(client, LogTailerConfig.builder().readFromStart(false).build(), received::add);
+            LogTailer tailer = new LogTailer(
+                    client,
+                    LogTailerConfig.builder().startMode(LogTailerConfig.StartMode.LATEST).build(),
+                    received::add);
 
             sender.open();
 

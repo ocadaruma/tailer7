@@ -77,10 +77,10 @@ public class LogTailer {
                 public void subscribed(String channel, long count) {
                     log.debug("subscribed to channel: {}, count: {}", channel, count);
 
-                    if (channel.equals(key) && config.isReadFromStart()) {
+                    if (channel.equals(key) && config.getStartMode() == LogTailerConfig.StartMode.GO_BACK) {
                         // for the first time
                         List<LogLine> previousLines =
-                                commands.zrange(key, 0, -1);
+                                commands.zrange(key, config.getStartOffset(), -1);
 
                         for (LogLine line : previousLines) {
                             queue.offer(line);
