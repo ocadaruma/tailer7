@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        lombokVersion = '1.18.4'
+        lombokVersion = '1.18.12'
     }
 }
 
@@ -27,83 +27,81 @@ subprojects {
         testCompile 'junit:junit:4.12'
         testCompile 'org.assertj:assertj-core:3.11.1'
     }
-}
 
-gradle.taskGraph.whenReady { taskGraph ->
-    if (taskGraph.allTasks.any { it instanceof Sign }) {
-        def password = System.console().readPassword("PGP Private Key Password: ")
-        project(':tailer7') { ext."signing.password" = new String(password) }
+    ext {
+        isReleaseVersion = !version.endsWith('-SNAPSHOT')
     }
 }
 
 project(':tailer7') {
-    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
     apply plugin: 'signing'
 
-    if (!project.hasProperty('sonatypeUsername')) {
-        ext.sonatypeUsername = ''
-    }
-    if (!project.hasProperty('sonatypePassword')) {
-        ext.sonatypePassword = ''
-    }
-
     task javadocJar(type: Jar) {
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from javadoc
     }
 
     task sourcesJar(type: Jar) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from sourceSets.main.allSource
     }
 
-    artifacts {
-        archives javadocJar, sourcesJar
-    }
-
-    signing {
-        sign configurations.archives
-    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: sonatypeUsername, password: sonatypePassword)
-                }
-
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                    authentication(userName: sonatypeUsername, password: sonatypePassword)
-                }
-
-                pom.project {
-                    name 'tailer7'
-                    packaging 'jar'
-                    description 'A scalable tailer powered by Redis'
-                    url 'https://github.com/ocadaruma/tailer7'
-
-                    scm {
-                        connection 'scm:git:git@github.com:ocadaruma/tailer7.git'
-                        url 'git@github.com:ocadaruma/tailer7.git'
+    afterEvaluate {
+        publishing {
+            repositories {
+                maven {
+                    if (isReleaseVersion) {
+                        url("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+                    } else {
+                        url("https://oss.sonatype.org/content/repositories/snapshots/")
                     }
-
-                    licenses {
-                        license {
-                            name 'The Apache License, Version 2.0'
-                            url 'https://raw.githubusercontent.com/ocadaruma/tailer7/master/LICENSE'
-                        }
+                    credentials {
+                        username findProperty("sonatypeUsername")
+                        password findProperty("sonatypePassword")
                     }
+                }
+            }
+            publications {
+                mavenJava(MavenPublication) {
+                    from components.java
+                    afterEvaluate {
+                        artifactId = project.name
 
-                    developers {
-                        developer {
-                            id 'ocadaruma'
-                            name 'Haruki Okada'
+                        artifact javadocJar
+                        artifact sourcesJar
+
+                        pom {
+                            name = 'tailer7'
+                            description = 'A scalable tailer powered by Redis'
+                            url = 'https://github.com/ocadaruma/tailer7'
+
+                            scm {
+                                connection = 'scm:git:git@github.com:ocadaruma/tailer7.git'
+                                url = 'git@github.com:ocadaruma/tailer7.git'
+                            }
+
+                            licenses {
+                                license {
+                                    name = 'The Apache License, Version 2.0'
+                                    url = 'https://raw.githubusercontent.com/ocadaruma/tailer7/master/LICENSE'
+                                }
+                            }
+
+                            developers {
+                                developer {
+                                    id = 'ocadaruma'
+                                    name = 'Haruki Okada'
+                                }
+                            }
                         }
                     }
                 }
             }
+        }
+        signing {
+            required { isReleaseVersion && gradle.taskGraph.hasTask("publish") }
+            sign publishing.publications.mavenJava
         }
     }
 }
