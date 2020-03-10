@@ -8,3 +8,20 @@ jdk:
 
 services:
   - redis-server
+
+before_deploy:
+  - openssl aes-256-cbc -K $encrypted_c0fddd6d7622_key -iv $encrypted_c0fddd6d7622_iv -in scripts/.travis.key.gpg.enc -out $HOME/.travis.key.gpg -d
+  - chmod 600 $HOME/.travis.key.gpg
+  - openssl aes-256-cbc -K $encrypted_7b9d62f05c7d_key -iv $encrypted_7b9d62f05c7d_iv -in scripts/user_gradle.properties.enc -out $HOME/.gradle/gradle.properties -d
+deploy:
+  skip_cleanup: true
+  provider: script
+  script: scripts/publish-release.sh
+  on:
+    tags: true
+    branch: master
+    condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$
+    jdk: 'openjdk8'
+env:
+  global:
+    - secure: "eWOkW09nfhfgOa/NnwpRHYG43ZQEMGQyHf9jWaoYyssPHIzcM7Sx3mtRLW+gl3HT2pj66vrwk/dyYaveyRdvXfyG/hSX716KpoDuuH1ZvguGzZOvVyDIB1lyClddUJygpBsd5LVsXPWUGqxSLoxuoemEAOFxWJdPSBep2dbXi2DTy9W7jRdYwOIqMQEGFpSI6YYFHED6SQ6NhzD8o/GsvJU4pk4tFA5qNrfX7wUPlP/m9OSh76McmEW9Y4ADriVHDcbg9ZDbmDKxh8PPTVgafZWHMuLUM5kMX0gSKLV9F8ROq7aBXJS4JNncX8UfowOWAZhG4uZfQ/qeXNf++tT5+DBBhoTsW9OYIi87sF2GboNDknoeUuxSDLTS0Vh/ZeiHTVRRvsZgVJc73JNzkQx131uhVm1OOV5S8djPD7xCyatS+WdCANX5BkhHqMmhHJb24l4Wrdb2bToRqIEEYUSvVSyzv58bAYf79VgDu4MD2DQxqQpjyiWgrfJ/Nx83z04qCRDi4cgqA/J2G1Tp6TEt1p279fEn7TVRtVfHZuloGC7Pt1rP6oRpZu3J5FoJ1bdzF4h1TfpuXOiQElihzd7QhGqRqTT+KIQEyfFdmR51NhrNGGdCK2Reert0rT5bWL/629N1qmbadiYdUvPn2+A+cz9q88xDGlxdQncc4Oato54="
