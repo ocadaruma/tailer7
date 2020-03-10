@@ -23,6 +23,7 @@ cat gradle.properties.tmp > gradle.properties
 rm gradle.properties.tmp
 echo $VERSION | awk -F '.' '{print "version="$1"."$2"."$3+1}' >> gradle.properties
 
+git checkout master
 git add gradle.properties
 git commit -m "$VERSION"
 
