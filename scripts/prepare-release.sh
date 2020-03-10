@@ -34,5 +34,5 @@ echo "Preparing to release tailer7 $VERSION"
 ./gradlew --no-daemon -P snapshot=false clean check
 
 # Create tag and push it (will trigger CI)
-echo "git tag $VERSION"
-echo "git push origin $VERSION"
+git tag $VERSION
+git push origin $VERSION
